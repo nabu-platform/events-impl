@@ -1,0 +1,7 @@
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="be.nabu.libs.events.DispatcherSimple">
+	<implementation class="be.nabu.libs.events.EventDispatcherImpl" />
+	<service>
+		<provide interface="be.nabu.libs.events.api.EventDispatcher" />
+	</service>
+	<property name="service.ranking" type="Integer" value="0"/>
+</scr:component>
