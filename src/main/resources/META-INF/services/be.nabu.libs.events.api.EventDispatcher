@@ -1,1 +1,1 @@
-be.nabu.libs.events.EventDispatcherImpl
+be.nabu.libs.events.impl.EventDispatcherImpl

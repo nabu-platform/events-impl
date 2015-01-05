@@ -1,4 +1,4 @@
-package be.nabu.libs.events;
+package be.nabu.libs.events.impl;
 
 import java.util.ArrayList;
 import java.util.List;

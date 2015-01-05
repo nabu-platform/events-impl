@@ -1,4 +1,4 @@
-package be.nabu.libs.events;
+package be.nabu.libs.events.impl;
 
 import java.util.Arrays;
 import java.util.HashSet;
