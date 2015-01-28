@@ -100,16 +100,26 @@ public class EventDispatcherImpl implements EventDispatcher {
 	
 	@Override
 	public <E, R> EventSubscription<E, R> subscribe(Class<E> eventType, EventHandler<E, R> handler, Object...sources) {
-		EventSubscriptionImpl<E, R> subscription = new EventSubscriptionImpl<E, R>(this, eventType, handler, sources);
-		subscriptions.add(subscription);
-		return subscription;
+		if (eventType == null) {
+			throw new NullPointerException("The event type for a subscription can not be null");
+		}
+		synchronized(subscriptions) {
+			EventSubscriptionImpl<E, R> subscription = new EventSubscriptionImpl<E, R>(this, eventType, handler, sources);
+			subscriptions.add(subscription);
+			return subscription;
+		}
 	}
 	
 	@Override
-	public <E> EventSubscription<E, Boolean> filter(Class<E> eventType, EventHandler<E, Boolean> handler, Object...sources) { 
-		EventSubscriptionImpl<E, Boolean> subscription = new EventSubscriptionImpl<E, Boolean>(this, eventType, handler, sources);
-		filters.add(subscription);
-		return subscription;
+	public <E> EventSubscription<E, Boolean> filter(Class<E> eventType, EventHandler<E, Boolean> handler, Object...sources) {
+		if (eventType == null) {
+			throw new NullPointerException("The event type for a filter can not be null");
+		}
+		synchronized(filters) {
+			EventSubscriptionImpl<E, Boolean> subscription = new EventSubscriptionImpl<E, Boolean>(this, eventType, handler, sources);
+			filters.add(subscription);
+			return subscription;
+		}
 	}
 	
 	<E, R> void unsubscribe(EventSubscriptionImpl<E, R> subscription) {
