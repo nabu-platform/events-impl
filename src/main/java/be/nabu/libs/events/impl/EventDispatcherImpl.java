@@ -17,9 +17,6 @@ import be.nabu.libs.events.api.ResponseHandler;
  * - does the subscription have a filter? If so and it returns false, the event handler is skipped
  * - get the response of the event handler and send it to the responsehandler if applicable
  * 		> does the response handler send back a non-null response? stop the event chain and return it
- * 
- * @author alex
- *
  */
 public class EventDispatcherImpl implements EventDispatcher {
 
@@ -31,15 +28,18 @@ public class EventDispatcherImpl implements EventDispatcher {
 		fire(event, source, null);
 	}
 
+	@Override
+	public <E, R> R fire(E event, Object source, ResponseHandler<E, R> responseHandler) {
+		return fire(event, source, responseHandler, null);
+	}
+
 	/**
 	 * Any filters are activated first which may stop the event in its tracks
 	 * Then all subscriptions are run through in order and activated
-	 * @param event
-	 * @param source
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
-	public <E, R> R fire(E event, Object source, ResponseHandler<E, R> responseHandler) {
+	public <E, R> R fire(E event, Object source, ResponseHandler<E, R> responseHandler, ResponseHandler<E, E> rewriteHandler) {
 		// filter the event
 		for (EventSubscriptionImpl subscription : filters) {
 			if (isInterestedIn(subscription, event, source)) {
@@ -65,6 +65,12 @@ public class EventDispatcherImpl implements EventDispatcher {
 				R handledResponse = responseHandler.handle(event, response, i == pipeline.size() - 1);
 				if (handledResponse != null) {
 					return handledResponse;
+				}
+			}
+			if (rewriteHandler != null) {
+				E rewrittenEvent = rewriteHandler.handle(event, response, i == pipeline.size() - 1);
+				if (rewrittenEvent != null) {
+					event = rewrittenEvent;
 				}
 			}
 		}
