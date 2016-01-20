@@ -2,6 +2,8 @@ package be.nabu.libs.events.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import be.nabu.libs.events.api.EventDispatcher;
 import be.nabu.libs.events.api.EventHandler;
@@ -22,10 +24,31 @@ public class EventDispatcherImpl implements EventDispatcher {
 
 	private List<EventSubscriptionImpl<?, ?>> subscriptions = new ArrayList<EventSubscriptionImpl<?, ?>>();
 	private List<EventSubscriptionImpl<?, Boolean>> filters = new ArrayList<EventSubscriptionImpl<?, Boolean>>();
-
+	private ExecutorService executors;
+	
+	public EventDispatcherImpl(int poolSize) {
+		executors = Executors.newFixedThreadPool(poolSize);
+	}
+	
+	public EventDispatcherImpl() {
+		// no asynchronous events
+	}
+	
 	@Override
-	public <E> void fire(E event, Object source) {
-		fire(event, source, null);
+	public <E> void fire(final E event, final Object source) {
+		// fire it asynchronously
+		if (executors != null) {
+			executors.submit(new Runnable() {
+				@Override
+				public void run() {
+					fire(event, source, null);		
+				}
+			});
+		}
+		// fire it synchronously
+		else {
+			fire(event, source, null);
+		}
 	}
 
 	@Override
