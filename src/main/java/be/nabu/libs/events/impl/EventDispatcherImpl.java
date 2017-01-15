@@ -1,6 +1,7 @@
 package be.nabu.libs.events.impl;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,8 +23,8 @@ import be.nabu.libs.events.api.ResponseHandler;
  */
 public class EventDispatcherImpl implements EventDispatcher {
 
-	private List<EventSubscriptionImpl<?, ?>> subscriptions = new ArrayList<EventSubscriptionImpl<?, ?>>();
-	private List<EventSubscriptionImpl<?, Boolean>> filters = new ArrayList<EventSubscriptionImpl<?, Boolean>>();
+	List<EventSubscriptionImpl<?, ?>> subscriptions = new ArrayList<EventSubscriptionImpl<?, ?>>();
+	List<EventSubscriptionImpl<?, Boolean>> filters = new ArrayList<EventSubscriptionImpl<?, Boolean>>();
 	private ExecutorService executors;
 	
 	public EventDispatcherImpl(int poolSize) {
@@ -103,10 +104,11 @@ public class EventDispatcherImpl implements EventDispatcher {
 	
 	@SuppressWarnings({ "rawtypes" })
 	private List<EventSubscriptionImpl> getPipeline(Object event, Object source) {
-		List<EventSubscriptionImpl> pipeline = new ArrayList<EventSubscriptionImpl>();
-		for (EventSubscriptionImpl subscription : subscriptions) {
-			if (isInterestedIn(subscription, event, source)) {
-				pipeline.add(subscription);
+		List<EventSubscriptionImpl> pipeline = new ArrayList<EventSubscriptionImpl>(subscriptions);
+		Iterator<EventSubscriptionImpl> iterator = pipeline.iterator();
+		while (iterator.hasNext()) {
+			if (!isInterestedIn(iterator.next(), event, source)) {
+				iterator.remove();
 			}
 		}
 		return pipeline;

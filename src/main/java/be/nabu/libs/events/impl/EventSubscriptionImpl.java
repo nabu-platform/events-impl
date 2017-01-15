@@ -2,6 +2,7 @@ package be.nabu.libs.events.impl;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import be.nabu.libs.events.api.EventHandler;
@@ -48,5 +49,36 @@ public class EventSubscriptionImpl<E, R> implements EventSubscription<E, R> {
 	@Override
 	public void unsubscribe() {
 		dispatcher.unsubscribe(this);
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@Override
+	public void promote() {
+		List list = dispatcher.subscriptions.contains(this) ? dispatcher.subscriptions : dispatcher.filters;
+		int index = list.indexOf(this);
+		if (index > 0) {
+			synchronized(list) {
+				Object first = list.get(0);
+				list.set(0, this);
+				list.set(index, first);
+			}
+		}
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@Override
+	public void demote() {
+		List list = dispatcher.subscriptions.contains(this) ? dispatcher.subscriptions : dispatcher.filters;
+		int index = list.indexOf(this);
+		if (index >= 0) {
+			synchronized(list) {
+				int to = list.size() - 1;
+				if (to > index) {
+					Object last = list.get(to);
+					list.set(to, this);
+					list.set(index, last);
+				}
+			}
+		}
 	}
 }
