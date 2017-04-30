@@ -58,9 +58,8 @@ public class EventSubscriptionImpl<E, R> implements EventSubscription<E, R> {
 		int index = list.indexOf(this);
 		if (index > 0) {
 			synchronized(list) {
-				Object first = list.get(0);
-				list.set(0, this);
-				list.set(index, first);
+				list.remove(this);
+				list.add(0, this);
 			}
 		}
 	}
@@ -70,14 +69,10 @@ public class EventSubscriptionImpl<E, R> implements EventSubscription<E, R> {
 	public void demote() {
 		List list = dispatcher.subscriptions.contains(this) ? dispatcher.subscriptions : dispatcher.filters;
 		int index = list.indexOf(this);
-		if (index >= 0) {
+		if (index < list.size() - 1) {
 			synchronized(list) {
-				int to = list.size() - 1;
-				if (to > index) {
-					Object last = list.get(to);
-					list.set(to, this);
-					list.set(index, last);
-				}
+				list.remove(this);
+				list.add(list.size() - 1, this);
 			}
 		}
 	}
