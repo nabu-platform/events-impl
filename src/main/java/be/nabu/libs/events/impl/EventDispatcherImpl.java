@@ -26,6 +26,11 @@ public class EventDispatcherImpl implements EventDispatcher {
 	List<EventSubscriptionImpl<?, ?>> subscriptions = new ArrayList<EventSubscriptionImpl<?, ?>>();
 	List<EventSubscriptionImpl<?, Boolean>> filters = new ArrayList<EventSubscriptionImpl<?, Boolean>>();
 	private ExecutorService executors;
+	private boolean recalculatePipelineOnRewrite = Boolean.parseBoolean(System.getProperty("event.recalculate.pipeline", "true"));
+	
+	public EventDispatcherImpl(ExecutorService executors) {
+		this.executors = executors;
+	}
 	
 	public EventDispatcherImpl(int poolSize) {
 		executors = Executors.newFixedThreadPool(poolSize);
@@ -74,7 +79,7 @@ public class EventDispatcherImpl implements EventDispatcher {
 				}
 			}
 		}
-		List<EventSubscriptionImpl> pipeline = getPipeline(event, source);
+		List<EventSubscriptionImpl> pipeline = getPipeline(event, source, null);
 		for (int i = 0; i < pipeline.size(); i++) {
 			EventSubscriptionImpl subscription = pipeline.get(i);
 			Object response = null;
@@ -95,6 +100,16 @@ public class EventDispatcherImpl implements EventDispatcher {
 				E rewrittenEvent = rewriteHandler.handle(event, response, i == pipeline.size() - 1);
 				if (rewrittenEvent != null) {
 					event = rewrittenEvent;
+					// if we are not the last in the pipeline, recalculate the rest of the pipeline, someone may now be interested
+					if (recalculatePipelineOnRewrite) {
+						List<EventSubscriptionImpl> remainder = getPipeline(rewrittenEvent, source, subscription);
+						// the current entry was processed as "not being the last", if we have no remainder, that would've been wrong
+						// so currently we don't allow empty remainders
+						if (!remainder.isEmpty()) {
+							pipeline.removeAll(pipeline.subList(i + 1, pipeline.size()));
+							pipeline.addAll(remainder);
+						}
+					}
 				}
 			}
 		}
@@ -103,11 +118,21 @@ public class EventDispatcherImpl implements EventDispatcher {
 	}
 	
 	@SuppressWarnings({ "rawtypes" })
-	private List<EventSubscriptionImpl> getPipeline(Object event, Object source) {
+	private List<EventSubscriptionImpl> getPipeline(Object event, Object source, EventSubscriptionImpl after) {
 		List<EventSubscriptionImpl> pipeline = new ArrayList<EventSubscriptionImpl>(subscriptions);
 		Iterator<EventSubscriptionImpl> iterator = pipeline.iterator();
+		boolean allow = after == null;
 		while (iterator.hasNext()) {
-			if (!isInterestedIn(iterator.next(), event, source)) {
+			EventSubscriptionImpl next = iterator.next();
+			// if we have an "after" to mark our start, check it
+			if (!allow) {
+				if (after.equals(next)) {
+					allow = true;
+				}
+				iterator.remove();
+				continue;
+			}
+			if (!isInterestedIn(next, event, source)) {
 				iterator.remove();
 			}
 		}
